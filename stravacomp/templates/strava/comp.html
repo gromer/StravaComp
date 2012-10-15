@@ -190,7 +190,7 @@
             self.clubTotalClimbed = ko.observable(0);
             self.clubEveresetClimbs = ko.computed(function() {
                 var numberEverests = self.clubTotalClimbed() / 29029;
-                return 'Or ' + (Math.round(numberEverests * 10) / 10) + ' Everest summits!';
+                return 'It\'s like y\'all climbed Everest ' + (Math.round(numberEverests * 10) / 10) + ' times!';
             });
             self.clubTotalDistance = ko.observable(0);
             self.clubTotalRides = ko.observable(0);
