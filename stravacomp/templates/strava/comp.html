@@ -5,7 +5,6 @@
 
 
     <link rel="stylesheet" href="{{ MEDIA_URL }}css/reset.css" />
-{#    <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.0/themes/base/jquery-ui.css">#}
 
     <style type="text/css">
         body {
@@ -67,13 +66,13 @@
     </style>
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
-{#    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>#}
     <script type="text/javascript"src="http://ajax.aspnetcdn.com/ajax/knockout/knockout-2.1.0.js"></script>
 </head>
 <body>
     <div id="comp-setup" class="comp">
         <label for="comp-club">Club:</label>
         <select id="comp-club" name="comp-club" data-bind="options: clubs,
+            optionsCaption: 'Choose one...',
             optionsText: 'name',
             optionsValue: 'value',
             value: chosenClub"></select>
@@ -94,7 +93,7 @@
             </div>
             <div class="total-climbed">
                 <div class="label">Total Climbed:</div>
-                <div class="stat"><span data-bind="text: clubTotalClimbed"></span> feet</div>
+                <div class="stat toggle" data-bind="attr: { 'title': clubEveresetClimbs }"><span data-bind="text: clubTotalClimbed"></span> feet</div>
             </div>
             <div class="total-distance">
                 <div class="label">Total Distance:</div>
@@ -189,6 +188,10 @@
             self.clubDescription = ko.observable('{{ club_details.description }}');
             self.clubAthleteCount = ko.observable({{ club_details.members|length }});
             self.clubTotalClimbed = ko.observable(0);
+            self.clubEveresetClimbs = ko.computed(function() {
+                var numberEverests = self.clubTotalClimbed() / 29029;
+                return 'Or ' + (Math.round(numberEverests * 10) / 10) + ' Everest summits!';
+            });
             self.clubTotalDistance = ko.observable(0);
             self.clubTotalRides = ko.observable(0);
 
@@ -197,7 +200,7 @@
 
             self.updateClub = function(newClub) {
                 $.ajax({
-                    url: {% url strava.views.club_details %} + self.chosenClub() + '/',
+                    url: {% url strava.views.club_details %} + newClub + '/',
                     data: { loadAthleteDetails: false },
                     dataType: 'json',
                     success: function(data) {
@@ -210,11 +213,6 @@
                         self.clubAthleteCount(data['members'].length);
 
                         for (var key in data['members']) {
-{#                            var athleteDetails = data['members'][key]['details'];#}
-{#                            athleteDetails.id = data['members'][key].id;#}
-{#                            athleteDetails.name = data['members'][key].name;#}
-{#                            self.addAthlete(athleteDetails);#}
-
                             var athlete = data['members'][key];
                             var d = { 'name': athlete['name'] };
                             url = '{% url strava.views.athlete_details %}' + athlete['id'] + '/' + self.chosenMonth() + '/';
@@ -228,8 +226,6 @@
                                 }
                             });
                         }
-
-{#                        self.processingAthletes(false);#}
                     }
                 });
             };
