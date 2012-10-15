@@ -16,7 +16,6 @@ METERS_TO_FEET_RATIO = 3.28084
 DEFAULT_CLUBS = [
     { 'id': '1', 'name': 'Team Strava' },
     { 'id': '15', 'name': 'Mission Cycling' },
-    { 'id': '7601', 'name': 'OFFTOPIC' },
 ]
 
 MONTHS = [
