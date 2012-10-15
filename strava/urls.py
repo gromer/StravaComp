@@ -3,6 +3,7 @@ from django.conf.urls.defaults import *
 from strava.views import *
 
 urlpatterns = patterns('',
+    url(r'^$', comp),
     url(r'^comp/$', comp),
     url(r'^comp/(?P<club_id>\d+)/$', comp),
     url(r'^athlete/$', athlete_details),
