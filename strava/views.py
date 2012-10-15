@@ -65,7 +65,6 @@ def club_details(request, club_id=1):
     else:
         load_athlete_details = False
 
-    print load_athlete_details
     club_details = get_club_details(club_id, load_athlete_details)
     return HttpResponse(json.dumps(club_details), mimetype='application/json')
 
