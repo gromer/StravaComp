@@ -1,9 +1,324 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title></title>
+    <title>Strava | {{ club_details.name }}</title>
+
+
+    <link rel="stylesheet" href="{{ MEDIA_URL }}css/reset.css" />
+{#    <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.0/themes/base/jquery-ui.css">#}
+
+    <style type="text/css">
+        body {
+            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+            font-weight: 300;
+        }
+
+        div.comp {
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+
+        #comp-setup {
+            background-color: #FC4C02;
+            color: #ffffff;
+        }
+
+        #comp-leaderboard table {
+            width: 100%;
+        }
+
+        #comp-leaderboard table th {
+            color: #777777;
+            padding-bottom: 10px;
+        }
+
+        tr.athlete td {
+            padding: 5px;
+        }
+
+        tr.athlete:hover {
+            background-color: #FC4C02;
+        }
+
+        #comp-details div.title {
+            color: #777777;
+            font-size: 110%;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        #comp-details div.description {
+            font-size: 90%;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        #comp-details div.club-stats {
+
+        }
+
+        #comp-details div.club-stats div.number-athletes,
+        #comp-details div.club-stats div.total-climbed,
+        #comp-details div.club-stats div.total-distance,
+        #comp-details div.club-stats div.total-rides {
+            float: left;
+            margin-right: 100px;
+        }
+    </style>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+{#    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>#}
+    <script type="text/javascript"src="http://ajax.aspnetcdn.com/ajax/knockout/knockout-2.1.0.js"></script>
 </head>
 <body>
+    <div id="comp-setup" class="comp">
+        <label for="comp-club">Club:</label>
+        <select id="comp-club" name="comp-club" data-bind="options: clubs,
+            optionsCaption: 'Choose...',
+            optionsText: 'name',
+            optionsValue: 'value',
+            value: chosenClub"></select>
+        <label for="comp-month">Month:</label>
+        <select id="comp-month" name="comp-month" data-bind="options: months,
+            optionsCaption: 'Choose...',
+            optionsText: 'name',
+            optionsValue: 'value',
+            value: chosenMonth"></select>
+    </div>
 
+    <div id="comp-details" class="comp">
+        <div class="title"><span data-bind="text: clubName">{{ club_details.name }}</span> - <span data-bind="text: clubLocation">{{ club_details.location }}</span></div>
+        <div class="description">{{ club_details.description }}</div>
+        <div class="club-stats">
+            <div class="number-athletes">
+                <div class="label">Athletes:</div>
+                <div class="stat"><span data-bind="text: clubAthleteCount">{{ club_details.members|length }}</span></div>
+            </div>
+            <div class="total-climbed">
+                <div class="label">Total Climbed:</div>
+                <div class="stat"><span data-bind="text: clubTotalClimbed"></span> feet</div>
+            </div>
+            <div class="total-distance">
+                <div class="label">Total Distance:</div>
+                <div class="stat"><span data-bind="text: clubTotalDistance"></span> miles</div>
+            </div>
+            <div class="total-rides">
+                <div class="label">Total Rides:</div>
+                <div class="stat"><span data-bind="text: clubTotalRides"></span></div>
+            </div>
+            <div style="clear: both;"></div>
+        </div>
+    </div>
+
+    <div id="comp-leaderboard" class="comp">
+        <table data-bind="visible: athletesInProcessing() == 0">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Athlete</th>
+                    <th>Rides</th>
+                    <th>Total Climbed</th>
+                    <th>Average Climbed</th>
+                    <th>Total Distance</th>
+                    <th>Average Distance</th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: athletes">
+                <tr class="athlete">
+                    <td class="rank"><span data-bind="text: ($index() + 1)"></span></td>
+                    <td class="athlete-name"><span data-bind="text: name"></span></td>
+                    <td class="number-rides"><span data-bind="text: numberRides"></span></td>
+                    <td class="total-climbed"><span data-bind="text: totalClimbedDisplay"></span></td>
+                    <td class="average-climbed"><span data-bind="text: averageClimbedDisplay"></span></td>
+                    <td class="total-distance"><span data-bind="text: totalDistanceDisplay"></span></td>
+                    <td class="average-distance"><span data-bind="text: averageDistanceDisplay"></span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div data-bind="visible: athletesInProcessing() != 0">
+            Loading...
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var AthleteViewModel = function(id, name, numberRides, totalClimbed, totalClimbedDisplay,
+                                        averageClimbed, averageClimbedDisplay, totalDistance, totalDistanceDisplay,
+                                        averageDistance, averageDistanceDisplay) {
+            var self = this;
+
+            self.id = id;
+            self.name = ko.observable(name);
+            self.numberRides = ko.observable(numberRides);
+            self.totalClimbed = ko.observable(totalClimbed);
+            self.totalClimbedDisplay = ko.observable(totalClimbedDisplay);
+            self.averageClimbed = ko.observable(averageClimbed);
+            self.averageClimbedDisplay = ko.observable(averageClimbedDisplay);
+            self.totalDistance = ko.observable(totalDistance);
+            self.totalDistanceDisplay = ko.observable(totalDistanceDisplay);
+            self.averageDistance = ko.observable(averageDistance);
+            self.averageDistanceDisplay = ko.observable(averageDistanceDisplay);
+        };
+
+        var CompSetupViewModel = function() {
+            var self = this;
+
+            var selectedMonth = {{ selected_month }};
+            var selectedClub = {{ selected_club }};
+
+            self.months = [
+                {% for month_option in month_options %}
+                    { name: '{{ month_option.name }}', value: {{ month_option.id }} },
+                {% endfor %}
+            ];
+            self.chosenMonth = ko.observable(selectedMonth);
+            self.chosenMonth.subscribe(function(newMonth) {
+                self.updateClub(newMonth);
+            });
+            self.clubs = [
+                {% for club_option in club_options %}
+                    { name: '{{ club_option.name }}', value: {{ club_option.id }} },
+                {% endfor %}
+            ];
+            self.chosenClub = ko.observable(selectedClub);
+            self.chosenClub.subscribe(function(newClub) {
+                self.updateClub(newClub);
+            });
+
+            self.clubId = ko.observable({{ club_details.id }});
+            self.clubName = ko.observable('{{ club_details.name }}');
+            self.clubLocation = ko.observable('{{ club_details.location }}');
+            self.clubDescription = ko.observable('{{ club_details.description }}');
+            self.clubAthleteCount = ko.observable({{ club_details.members|length }});
+            self.clubTotalClimbed = ko.observable(0);
+            self.clubTotalDistance = ko.observable(0);
+            self.clubTotalRides = ko.observable(0);
+
+            self.processingAthletes = ko.observable(false);
+            self.athletesInProcessing = ko.observable({{ club_details.members|length }});
+
+            self.updateClub = function(newClub) {
+                $.ajax({
+                    url: {% url strava.views.club_details %} + self.chosenClub() + '/',
+                    data: { loadAthleteDetails: false },
+                    dataType: 'json',
+                    success: function(data) {
+                        self.athletes.removeAll();
+                        self.athletesInProcessing(data['members'].length);
+
+                        self.clubId(data['id']);
+                        self.clubName(data['name']);
+                        self.clubDescription(data['description']);
+                        self.clubAthleteCount(data['members'].length);
+
+                        for (var key in data['members']) {
+{#                            var athleteDetails = data['members'][key]['details'];#}
+{#                            athleteDetails.id = data['members'][key].id;#}
+{#                            athleteDetails.name = data['members'][key].name;#}
+{#                            self.addAthlete(athleteDetails);#}
+
+                            var athlete = data['members'][key];
+                            var d = { 'name': athlete['name'] };
+                            url = '{% url strava.views.athlete_details %}' + athlete['id'] + '/' + self.chosenMonth() + '/';
+                            $.ajax({
+                                url: url,
+                                data: d,
+                                dataType: 'json',
+                                success: function(data) {
+                                    self.addAthlete(data);
+                                    self.athletesInProcessing(self.athletesInProcessing() - 1);
+                                }
+                            });
+                        }
+
+{#                        self.processingAthletes(false);#}
+                    }
+                });
+            };
+
+            self.updateMonth = function(newMonth) {
+                for (var key in self.athletes()) {
+                    var athleteViewModel = self.athletes()[key];
+                    url = '{% url strava.views.athlete_details %}' + athleteViewModel.id + '/' + self.chosenMonth() + '/';
+                    $.ajax({
+                        url: url,
+                        dataType: 'json',
+                        success: function(data) {
+                            self.updateAthlete(data);
+                        }
+                    });
+                }
+            };
+
+            self.athletes = ko.observableArray([
+                {% for member in club_details.members %}
+                    new AthleteViewModel({{ member.id }}, '{{ member.name }}', 0, 0, 0, 0, 0, 0, 0, 0, 0),
+                {% endfor %}
+            ]);
+            self.addAthlete = function (athlete) {
+                var athleteViewModel = new AthleteViewModel(athlete.id, athlete.name, athlete.number_rides,
+                        athlete.total_climbed.raw, athlete.total_climbed.display,
+                        athlete.average_climbed.raw, athlete.average_climbed.display,
+                        athlete.total_distance.raw, athlete.total_distance.display,
+                        athlete.average_distance.raw, athlete.average_distance.display);
+                self.athletes.push(athleteViewModel);
+                self.updateClubInformation();
+                self.sortAthletes();
+            };
+            self.updateAthlete = function(athlete) {
+                var id = parseInt(athlete['id']);
+                var match = ko.utils.arrayFirst(this.athletes(), function(currentAthlete) {
+                    return currentAthlete.id == id;
+                });
+
+                if (match) {
+                    match.numberRides(athlete['number_rides']);
+                    match.totalClimbed(athlete['total_climbed']['raw']);
+                    match.totalClimbedDisplay(athlete['total_climbed']['display']);
+                    match.averageClimbed(athlete['average_climbed']['raw']);
+                    match.averageClimbedDisplay(athlete['average_climbed']['display']);
+                    match.totalDistance(athlete['total_distance']['raw']);
+                    match.totalDistanceDisplay(athlete['total_distance']['display']);
+                    match.averageDistance(athlete['average_distance']['raw']);
+                    match.averageDistanceDisplay(athlete['average_distance']['display']);
+                }
+
+                self.updateClubInformation();
+
+                self.sortAthletes();
+            };
+            self.updateClubInformation = function() {
+                var climbed = 0;
+                var distance = 0;
+                var numberRides = 0;
+
+                for (var key in self.athletes()) {
+                    var temp = self.athletes()[key];
+                    climbed += temp.totalClimbed();
+                    distance += temp.totalDistance();
+                    numberRides += temp.numberRides();
+                }
+
+                self.clubTotalClimbed(Math.round(climbed * 10) / 10);
+                self.clubTotalDistance(Math.round(distance * 10) / 10);
+                self.clubTotalRides(numberRides);
+            };
+            self.sortAthletes = function() {
+                self.athletes.sort(function(left, right) {
+                    var result = left.totalClimbed() == right.totalClimbed()
+                            ? 0
+                            : (left.totalClimbed() < right.totalClimbed() ? 1 : -1);
+                    return result;
+                });
+            };
+
+            self.isValidSetup = ko.computed(function() {
+                return self.chosenClub() !== undefined && self.chosenMonth() !== undefined;
+            });
+
+            self.updateClub(selectedClub);
+        }
+        ko.applyBindings(new CompSetupViewModel());
+    </script>
 </body>
 </html>

@@ -1,6 +1,5 @@
-Django==1.4.1
-distribute==0.6.24
-dj-database-url==0.2.1
+Cheetah==2.4.4
+Markdown==2.1.1
 httplib2==0.7.6
-psycopg2==2.4.5
+virtualenv==1.7.1.2
 wsgiref==0.1.2
