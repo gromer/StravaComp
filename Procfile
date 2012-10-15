@@ -1,1 +1,1 @@
-web: python stravacomp/manage.py runserver
+web: python strava/manage.py runserver
